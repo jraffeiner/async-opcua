@@ -12,7 +12,7 @@ use opcua_types::{
     ByteString, CloseSecureChannelRequest, ContextOwned, IntegerId, NodeId, RequestHeader,
     SecurityTokenRequestType, StatusCode,
 };
-use tracing::{debug, error};
+use tracing::{debug, error, instrument, trace};
 
 use super::{
     connect::{Connector, Transport},
@@ -160,6 +160,7 @@ impl AsyncSecureChannel {
     }
 
     /// Send a message on the secure channel, and wait for a response.
+    #[instrument(skip(self, request), ret, err)]
     pub async fn send(
         &self,
         request: impl Into<RequestMessage>,
@@ -193,9 +194,9 @@ impl AsyncSecureChannel {
                     Duration::from_secs(30),
                     send.clone(),
                 );
-
+                trace!("Sending Renew Request");
                 let resp = request.send().await?;
-
+                trace!("Got Response for renew");
                 self.state.end_issue_or_renew_secure_channel(resp)?;
             }
 

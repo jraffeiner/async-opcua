@@ -16,7 +16,7 @@ use opcua_core::{
     },
     RequestMessage, ResponseMessage,
 };
-use tracing::error;
+use tracing::{error, trace};
 use tracing_futures::Instrument;
 
 use crate::info::ServerInfo;
@@ -371,6 +371,7 @@ impl TcpTransport {
                 let header = chunk.message_header(&channel.decoding_options())?;
 
                 if header.is_final == MessageIsFinalType::FinalError {
+                    trace!("Clearing pending Chunks");
                     self.pending_chunks.clear();
                     Ok(None)
                 } else {

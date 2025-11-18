@@ -14,7 +14,7 @@ use std::{
 
 use bytes::Buf;
 use chrono::Duration;
-use tracing::{error, trace};
+use tracing::{error, info, instrument, trace};
 
 use opcua_crypto::{
     aeskey::AesKey,
@@ -294,6 +294,7 @@ impl SecureChannel {
 
     /// Test if the secure channel token needs to be renewed. The algorithm determines it needs
     /// to be renewed if the issue period has elapsed by 75% or more.
+    #[instrument(ret)]
     pub fn should_renew_security_token(&self) -> bool {
         if self.token_id() == 0 {
             false
@@ -860,6 +861,8 @@ impl SecureChannel {
                 ));
             };
 
+            trace!("Got Security Header: {security_header:?}");
+
             let mut decrypted_data = vec![0u8; message_size];
             let decrypted_size = self.symmetric_decrypt_and_verify(
                 src,
@@ -1191,9 +1194,12 @@ impl SecureChannel {
                 expires_at: self.token_created_at + expires_at,
             },
         );
+
+        info!("Added new Key({}): {:?}",self.token_id, self.remote_keys.get(&self.token_id))
     }
 
     fn get_remote_keys(&self, token_id: u32) -> Option<&(Vec<u8>, AesKey, Vec<u8>)> {
+        info!("Get Keys for: {token_id}");
         self.remote_keys.get(&token_id).map(|k| &k.keys)
     }
 

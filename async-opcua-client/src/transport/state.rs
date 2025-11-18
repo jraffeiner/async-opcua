@@ -4,7 +4,7 @@ use std::{
 };
 
 use tokio::sync::mpsc::error::SendTimeoutError;
-use tracing::{debug, trace};
+use tracing::{debug, instrument, trace};
 
 use crate::{session::process_unexpected_response, transport::OutgoingMessage};
 use arc_swap::ArcSwap;
@@ -33,6 +33,7 @@ pub(super) struct SecureChannelState {
     request_handle: AtomicHandle,
 }
 
+#[derive(Debug)]
 pub(super) struct Request {
     payload: RequestMessage,
     sender: RequestSend,
@@ -66,6 +67,7 @@ impl Request {
         }
     }
 
+    #[instrument]
     pub(super) async fn send(self) -> Result<ResponseMessage, StatusCode> {
         let (cb_send, cb_recv) = tokio::sync::oneshot::channel();
 
@@ -155,6 +157,7 @@ impl SecureChannelState {
         response: ResponseMessage,
     ) -> Result<(), StatusCode> {
         if let ResponseMessage::OpenSecureChannel(response) = response {
+            trace!("Got OpenSecureChannel Respones: {response:?}");
             // Extract the security token from the response.
             let mut security_token = response.security_token.clone();
 

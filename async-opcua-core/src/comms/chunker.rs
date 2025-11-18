@@ -4,7 +4,7 @@
 
 //! Contains code for turning messages into chunks and chunks into messages.
 
-use std::io::{Read, Write};
+use std::{fmt::Debug, io::{Read, Write}};
 
 use crate::{
     comms::{
@@ -20,7 +20,7 @@ use opcua_types::{
     encoding::BinaryEncodable, node_id::NodeId, status_code::StatusCode, BinaryDecodable,
     EncodingResult, Error, ObjectId,
 };
-use tracing::{debug, error, trace};
+use tracing::{debug, error, instrument, trace};
 
 use super::message_chunk::MessageChunkType;
 
@@ -409,7 +409,8 @@ impl Chunker {
 
     /// Decodes a series of chunks to create a message. The message must be of a `SupportedMessage`
     /// type otherwise an error will occur.
-    pub fn decode<T: Message>(
+    #[instrument(skip(chunks), ret, err)]
+    pub fn decode<T: Message + Debug>(
         chunks: &[MessageChunk],
         secure_channel: &SecureChannel,
         expected_node_id: Option<NodeId>,
