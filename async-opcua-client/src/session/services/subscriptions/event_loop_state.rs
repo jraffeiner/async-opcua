@@ -154,7 +154,10 @@ impl<T: Future<Output = Result<bool, StatusCode>>, R: Fn() -> T, S: Subscription
                 self.no_active_subscription = false;
                 ActivityOrNext::Next(next_publish)
             }
-            _ = self.wait_for_next_tick(next_publish) => ActivityOrNext::Next(next_publish),
+            _ = self.wait_for_next_tick(next_publish) => {
+                next_publish = self.subscription_cache.next_publish_time(true);
+                ActivityOrNext::Next(next_publish)
+            },
             res = self.wait_for_next_publish() => {
                 match res {
                     Ok(more_notifications) => {
